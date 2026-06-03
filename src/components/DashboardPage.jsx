@@ -12,7 +12,7 @@ const kpiConfig = [
   { key: 'valoreMedio',   label: 'Valore Medio',   type: 'currency', icon: TrendingUp,   iconBg: 'rgba(245,158,11,0.7)'  },
 ]
 
-export default function DashboardPage({ filters, onFilter, onReset, isDirty, data, sales = [] }) {
+export default function DashboardPage({ filters, onFilter, onReset, isDirty, data, sales = [], apiOnline, onDelete }) {
   const { monthlySales, kpiData, catData } = data
 
   return (
@@ -38,7 +38,7 @@ export default function DashboardPage({ filters, onFilter, onReset, isDirty, dat
         <CategoryChart data={catData} />
       </div>
 
-      <RecentSales sales={sales} />
+      <RecentSales sales={sales} apiOnline={apiOnline} onDelete={onDelete} />
     </>
   )
 }
