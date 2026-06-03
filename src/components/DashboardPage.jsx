@@ -3,6 +3,7 @@ import KpiCard from './KpiCard'
 import SalesChart from './SalesChart'
 import CategoryChart from './CategoryChart'
 import FilterBar from './FilterBar'
+import RecentSales from './RecentSales'
 import { categoryData } from '../data/mockData'
 
 const kpiConfig = [
@@ -12,7 +13,7 @@ const kpiConfig = [
   { key: 'valoreMedio',   label: 'Valore Medio',   type: 'currency', icon: TrendingUp,   iconBg: 'rgba(245,158,11,0.7)'  },
 ]
 
-export default function DashboardPage({ filters, onFilter, onReset, isDirty, data }) {
+export default function DashboardPage({ filters, onFilter, onReset, isDirty, data, sales = [] }) {
   const { monthlySales, kpiData } = data
 
   return (
@@ -37,6 +38,8 @@ export default function DashboardPage({ filters, onFilter, onReset, isDirty, dat
         <SalesChart data={monthlySales} />
         <CategoryChart data={categoryData} />
       </div>
+
+      <RecentSales sales={sales} />
     </>
   )
 }
