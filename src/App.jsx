@@ -19,7 +19,7 @@ export default function App() {
   const [toast, setToast]           = useState(null)
   const [sales, setSales]           = useState([])
   const [apiOnline, setApiOnline]   = useState(null) // null = checking
-  const { filters, setFilter, reset, isDirty, data } = useFilters()
+  const { filters, setFilter, reset, isDirty, data } = useFilters(sales)
 
   // Carica vendite dal DB all'avvio
   const loadSales = useCallback(async () => {

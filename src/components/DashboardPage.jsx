@@ -4,7 +4,6 @@ import SalesChart from './SalesChart'
 import CategoryChart from './CategoryChart'
 import FilterBar from './FilterBar'
 import RecentSales from './RecentSales'
-import { categoryData } from '../data/mockData'
 
 const kpiConfig = [
   { key: 'totaleVendite', label: 'Totale Vendite', type: 'currency', icon: Euro,         iconBg: 'rgba(99,102,241,0.7)'  },
@@ -14,7 +13,7 @@ const kpiConfig = [
 ]
 
 export default function DashboardPage({ filters, onFilter, onReset, isDirty, data, sales = [] }) {
-  const { monthlySales, kpiData } = data
+  const { monthlySales, kpiData, catData } = data
 
   return (
     <>
@@ -36,7 +35,7 @@ export default function DashboardPage({ filters, onFilter, onReset, isDirty, dat
 
       <div className="charts-row">
         <SalesChart data={monthlySales} />
-        <CategoryChart data={categoryData} />
+        <CategoryChart data={catData} />
       </div>
 
       <RecentSales sales={sales} />

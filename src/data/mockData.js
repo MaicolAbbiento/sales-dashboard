@@ -65,13 +65,11 @@ export const categoryData = [
   { name: 'Altro',          value: 10 },
 ]
 
-export function filterData({ periodo, venditore, categoria }) {
+export function filterData({ periodo, venditore, categoria }, realSales = []) {
   const periodoConf = PERIODI.find(p => p.value === periodo) ?? PERIODI[6]
-  const vm = venditoreMult[venditore] ?? 1
-  const cm = categoriaMult[categoria] ?? 1
-  const mult = venditore === 'tutti' && categoria === 'tutte' ? 1 : vm * (categoria === 'tutte' ? 1 : cm / (vm || 1))
-  const factor = venditore === 'tutti' ? (categoria === 'tutte' ? 1 : categoriaMult[categoria]) : vm
+  const factor = venditore === 'tutti' ? (categoria === 'tutte' ? 1 : categoriaMult[categoria]) : venditoreMult[venditore] ?? 1
 
+  // Base mock mensile filtrata per periodo/venditore/categoria
   const monthlySales = periodoConf.months.map(i => ({
     ...ALL_MONTHS[i],
     vendite: Math.round(ALL_MONTHS[i].vendite * factor),
@@ -79,16 +77,53 @@ export function filterData({ periodo, venditore, categoria }) {
     target:  Math.round(ALL_MONTHS[i].target  * factor),
   }))
 
-  const totaleVendite = monthlySales.reduce((s, r) => s + r.vendite, 0)
-  const ordiniTotali  = monthlySales.reduce((s, r) => s + r.ordini, 0)
+  // Filtra le vendite reali in base ai filtri attivi
+  const filteredReal = realSales.filter(s => {
+    if (venditore !== 'tutti' && s.venditore !== venditore) return false
+    if (categoria !== 'tutte' && s.categoria !== categoria) return false
+    const monthIdx = new Date(s.data).getMonth()
+    if (!periodoConf.months.includes(monthIdx)) return false
+    return true
+  })
+
+  // Aggiungi le vendite reali al mese corretto nel grafico
+  filteredReal.forEach(s => {
+    const monthIdx = new Date(s.data).getMonth()
+    const slot = monthlySales.findIndex((_, i) => periodoConf.months[i] === monthIdx)
+    if (slot !== -1) {
+      monthlySales[slot].vendite += Number(s.importo)
+      monthlySales[slot].ordini  += 1
+    }
+  })
+
+  const totaleVendite = monthlySales.reduce((sum, r) => sum + r.vendite, 0)
+  const ordiniTotali  = monthlySales.reduce((sum, r) => sum + r.ordini,  0)
+  const clientiAttivi = Math.round(342 * factor) + filteredReal.length
+
+  // Categoria donut: se ci sono vendite reali le incorpora
+  let catData = [...categoryData]
+  if (filteredReal.length > 0) {
+    const totaleReale = filteredReal.reduce((s, r) => s + Number(r.importo), 0)
+    const bycat = {}
+    filteredReal.forEach(s => { bycat[s.categoria] = (bycat[s.categoria] ?? 0) + Number(s.importo) })
+    catData = CATEGORIE.filter(c => c.value !== 'tutte').map(c => {
+      const base = categoryData.find(x => x.name.toLowerCase().startsWith(c.value)) ?? { value: 0 }
+      const extra = ((bycat[c.value] ?? 0) / (totaleVendite || 1)) * 100
+      return { name: c.label, value: Math.round(base.value + extra) }
+    })
+    // normalizza a 100
+    const tot = catData.reduce((s, x) => s + x.value, 0)
+    catData = catData.map(x => ({ ...x, value: Math.round((x.value / tot) * 100) }))
+  }
 
   return {
     monthlySales,
+    catData,
     kpiData: {
-      totaleVendite: { value: totaleVendite, change: +(Math.random() * 20 - 5).toFixed(1) },
-      ordiniTotali:  { value: ordiniTotali,  change: +(Math.random() * 20 - 5).toFixed(1) },
-      clientiAttivi: { value: Math.round(342 * factor), change: +(Math.random() * 15 - 3).toFixed(1) },
-      valoreMedio:   { value: ordiniTotali ? Math.round(totaleVendite / ordiniTotali) : 0, change: +(Math.random() * 10 - 2).toFixed(1) },
+      totaleVendite: { value: totaleVendite, change: +(((filteredReal.reduce((s,r)=>s+Number(r.importo),0) / (totaleVendite||1)) * 100).toFixed(1)) },
+      ordiniTotali:  { value: ordiniTotali,  change: +(((filteredReal.length / (ordiniTotali||1)) * 100).toFixed(1)) },
+      clientiAttivi: { value: clientiAttivi, change: filteredReal.length > 0 ? +((filteredReal.length / 342 * 100).toFixed(1)) : 0 },
+      valoreMedio:   { value: ordiniTotali ? Math.round(totaleVendite / ordiniTotali) : 0, change: 0 },
     },
   }
 }
