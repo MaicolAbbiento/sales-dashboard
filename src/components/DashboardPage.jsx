@@ -4,7 +4,6 @@ import SalesChart from './SalesChart'
 import CategoryChart from './CategoryChart'
 import FilterBar from './FilterBar'
 import RecentSales from './RecentSales'
-import { categoryData } from '../data/mockData'
 
 const kpiConfig = [
   { key: 'totaleVendite', label: 'Totale Vendite', type: 'currency', icon: Euro,         iconBg: 'rgba(99,102,241,0.7)'  },
@@ -13,8 +12,8 @@ const kpiConfig = [
   { key: 'valoreMedio',   label: 'Valore Medio',   type: 'currency', icon: TrendingUp,   iconBg: 'rgba(245,158,11,0.7)'  },
 ]
 
-export default function DashboardPage({ filters, onFilter, onReset, isDirty, data, sales = [] }) {
-  const { monthlySales, kpiData } = data
+export default function DashboardPage({ filters, onFilter, onReset, isDirty, data, sales = [], apiOnline, onDelete }) {
+  const { monthlySales, kpiData, catData } = data
 
   return (
     <>
@@ -36,10 +35,10 @@ export default function DashboardPage({ filters, onFilter, onReset, isDirty, dat
 
       <div className="charts-row">
         <SalesChart data={monthlySales} />
-        <CategoryChart data={categoryData} />
+        <CategoryChart data={catData} />
       </div>
 
-      <RecentSales sales={sales} />
+      <RecentSales sales={sales} apiOnline={apiOnline} onDelete={onDelete} />
     </>
   )
 }

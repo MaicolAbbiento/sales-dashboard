@@ -3,10 +3,10 @@ import { filterData } from '../data/mockData'
 
 const DEFAULT = { periodo: 'ytd', venditore: 'tutti', categoria: 'tutte' }
 
-export default function useFilters() {
+export default function useFilters(sales = []) {
   const [filters, setFilters] = useState(DEFAULT)
 
-  const data = useMemo(() => filterData(filters), [filters])
+  const data = useMemo(() => filterData(filters, sales), [filters, sales])
 
   function setFilter(key, value) {
     setFilters(prev => ({ ...prev, [key]: value }))
