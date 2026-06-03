@@ -1,122 +1,102 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import { useState, useEffect, useCallback } from 'react'
+import Sidebar from './components/Sidebar'
+import Header from './components/Header'
+import DashboardPage from './components/DashboardPage'
+import Placeholder from './components/Placeholder'
+import AddSaleModal from './components/AddSaleModal'
+import Toast from './components/Toast'
+import useFilters from './hooks/useFilters'
+import { fetchSales, createSale, deleteSale } from './data/api'
+import './styles/global.css'
+import './styles/layout.css'
+import './styles/dashboard.css'
+import './styles/filters.css'
+import './styles/modal.css'
 
-function App() {
-  const [count, setCount] = useState(0)
+export default function App() {
+  const [activePage, setActivePage] = useState('dashboard')
+  const [showModal, setShowModal]   = useState(false)
+  const [toast, setToast]           = useState(null)
+  const [sales, setSales]           = useState([])
+  const [apiOnline, setApiOnline]   = useState(null) // null = checking
+  const { filters, setFilter, reset, isDirty, data } = useFilters()
+
+  // Carica vendite dal DB all'avvio
+  const loadSales = useCallback(async () => {
+    try {
+      const data = await fetchSales()
+      setSales(data)
+      setApiOnline(true)
+    } catch {
+      setApiOnline(false)
+    }
+  }, [])
+
+  useEffect(() => { loadSales() }, [loadSales])
+
+  async function handleSave(sale) {
+    if (apiOnline) {
+      try {
+        const saved = await createSale(sale)
+        setSales(prev => [saved, ...prev])
+        setShowModal(false)
+        setToast(`"${saved.prodotto}" salvata nel database`)
+        return
+      } catch (e) {
+        setToast(`Errore API: ${e.message}`)
+        return
+      }
+    }
+    // fallback locale se il server non è attivo
+    setSales(prev => [{ ...sale, id: Date.now(), created_at: new Date().toISOString() }, ...prev])
+    setShowModal(false)
+    setToast(`"${sale.prodotto}" aggiunta (solo in memoria — server offline)`)
+  }
+
+  async function handleDelete(id) {
+    if (apiOnline) {
+      try {
+        await deleteSale(id)
+      } catch {
+        // ignora errore delete, rimuovi comunque dalla UI
+      }
+    }
+    setSales(prev => prev.filter(s => s.id !== id))
+  }
+
+  function renderPage() {
+    if (activePage === 'dashboard') return (
+      <DashboardPage
+        filters={filters}
+        onFilter={setFilter}
+        onReset={reset}
+        isDirty={isDirty}
+        data={data}
+        sales={sales}
+        apiOnline={apiOnline}
+        onDelete={handleDelete}
+      />
+    )
+    return <Placeholder page={activePage} />
+  }
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+    <div className="app-shell">
+      <Sidebar activePage={activePage} onNavigate={setActivePage} />
+      <div className="main-area">
+        <Header activePage={activePage} onAddSale={() => setShowModal(true)} />
+        <main className="page-content">
+          {renderPage()}
+        </main>
+      </div>
 
-      <div className="ticks"></div>
+      {showModal && (
+        <AddSaleModal onClose={() => setShowModal(false)} onSave={handleSave} />
+      )}
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+      {toast && (
+        <Toast message={toast} onDone={() => setToast(null)} />
+      )}
+    </div>
   )
 }
-
-export default App
